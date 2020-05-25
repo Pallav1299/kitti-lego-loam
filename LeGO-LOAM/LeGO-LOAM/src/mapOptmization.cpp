@@ -522,6 +522,7 @@ public:
         po->y = y2 + tY;
         po->z = -sPitch * x2 + cPitch * z2 + tZ;
         po->intensity = pi->intensity;
+        po->rgb = pi->rgb;  ////
     }
 
     void updateTransformPointCloudSinCos(PointTypePose *tIn){
@@ -566,6 +567,8 @@ public:
             pointTo.y = y2 + tInY;
             pointTo.z = -stPitch * x2 + ctPitch * z2 + tInZ;
             pointTo.intensity = pointFrom->intensity;
+            
+            pointTo.rgb = pointFrom->rgb;   ////
 
             cloudOut->points[i] = pointTo;
         }
@@ -597,6 +600,8 @@ public:
             pointTo.y = y2 + transformIn->y;
             pointTo.z = -sin(transformIn->pitch) * x2 + cos(transformIn->pitch) * z2 + transformIn->z;
             pointTo.intensity = pointFrom->intensity;
+
+            pointTo.rgb = pointFrom->rgb;   ////
 
             cloudOut->points[i] = pointTo;
         }
@@ -701,6 +706,22 @@ public:
             rate.sleep();
             publishGlobalMap();
         }
+        //remove all black points
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices());    ////
+        pcl::ExtractIndices<PointType> extract; ////
+        for (int i = 0; i < (*globalMapKeyFramesDS).size(); i++)    ////
+        {
+            PointType pt;   ////
+            pt = globalMapKeyFramesDS->points[i];   ////
+            if ((pt.r==0) && (pt.g==0) && (pt.b==0)){   ////
+                inliers->indices.push_back(i);  ////
+            }
+        }
+        extract.setInputCloud(globalMapKeyFramesDS);    ////
+        extract.setIndices(inliers);    ////
+        extract.setNegative(true);  ////
+        extract.filter(*globalMapKeyFramesDS);   ////
+
         // save final point cloud
         pcl::io::savePCDFileASCII(fileDirectory+"finalCloud.pcd", *globalMapKeyFramesDS);
 

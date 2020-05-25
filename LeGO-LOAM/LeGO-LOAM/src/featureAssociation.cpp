@@ -488,6 +488,8 @@ public:
             point.y = segmentedCloud->points[i].z;
             point.z = segmentedCloud->points[i].x;
 
+            point.rgb = segmentedCloud->points[i].rgb;  ////
+
             float ori = -atan2(point.x, point.z);
             if (!halfPassed) {
                 if (ori < segInfo.startOrientation - M_PI / 2)
@@ -867,6 +869,8 @@ public:
         po->y = y2;
         po->z = sin(ry) * x2 + cos(ry) * z2;
         po->intensity = pi->intensity;
+
+        po->rgb = pi->rgb;  ////
     }
 
     void TransformToEnd(PointType const * const pi, PointType * const po)
@@ -937,6 +941,8 @@ public:
         po->y = -sin(imuRollLast) * x11 + cos(imuRollLast) * y11;
         po->z = z11;
         po->intensity = int(pi->intensity);
+
+        po->rgb = pi->rgb;  ////
     }
 
     void PluginIMURotation(float bcx, float bcy, float bcz, float blx, float bly, float blz, 
@@ -1739,6 +1745,9 @@ public:
             point.y = outlierCloud->points[i].z;
             point.z = outlierCloud->points[i].x;
             point.intensity = outlierCloud->points[i].intensity;
+
+            point.rgb = outlierCloud->points[i].rgb;    ////
+            
             outlierCloud->points[i] = point;
         }
     }

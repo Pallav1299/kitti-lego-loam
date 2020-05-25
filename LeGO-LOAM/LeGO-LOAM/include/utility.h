@@ -1,7 +1,7 @@
 #ifndef _UTILITY_LIDAR_ODOMETRY_H_
 #define _UTILITY_LIDAR_ODOMETRY_H_
 
-
+#define PCL_NO_PRECOMPILE
 #include <ros/ros.h>
 
 #include <sensor_msgs/Imu.h>
@@ -18,6 +18,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/range_image/range_image.h>
 #include <pcl/filters/filter.h>	
+#include <pcl/filters/extract_indices.h>    ////	
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/common/common.h>
@@ -49,14 +50,17 @@
 
 using namespace std;
 
-typedef pcl::PointXYZI  PointType;
+// typedef pcl::PointXYZI  PointType;
 
-extern const string pointCloudTopic = "/kitti/velo/pointcloud";
-extern const string imuTopic = "/imu/data";
+extern const string pointCloudTopic = "/points_fused";
 
+// extern const string imuTopic = "/imu/data";
+extern const string imuTopic = "/kitti/oxts/imu"; 
 
 // Save pcd
-extern const string fileDirectory = "/tmp/";
+// extern const string fileDirectory = "/tmp/";
+// extern const string fileDirectory = "/home/pallavbhalla/Documents/LeGO-LOAM/normal_pcd/";
+extern const string fileDirectory = "/home/pallavbhalla/Documents/LeGO-LOAM/coloured_pcd/";
 
 // VLP-16
 //extern const int N_SCAN = 16;
@@ -95,9 +99,9 @@ extern const string fileDirectory = "/tmp/";
 //Vel 64
 extern const int N_SCAN = 64;
 extern const int Horizon_SCAN = 1800;
-extern const float ang_res_x = 0.2;
+extern const float ang_res_x = 0.2;  //0.2;
 extern const float ang_res_y = 0.427;
-extern const float ang_bottom = 24.9;
+extern const float ang_bottom = 24.9; //24.9;
 extern const int groundScanInd = 50;
 
 extern const bool loopClosureEnableFlag = false;
@@ -168,5 +172,24 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRPYT,
 )
 
 typedef PointXYZIRPYT  PointTypePose;
+
+/*
+    * A point cloud type: XYZIRGB
+    */
+struct PointXYZIRGB
+{
+    PCL_ADD_POINT4D;
+    PCL_ADD_INTENSITY;
+    PCL_ADD_RGB;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRGB,
+                                   (float, x, x) (float, y, y)
+                                   (float, z, z) (float, intensity, intensity)
+                                   (float, rgb, rgb)
+)
+
+typedef PointXYZIRGB  PointType;
 
 #endif

@@ -55,6 +55,8 @@ private:
     pcl::PointCloud<PointType>::Ptr segmentedCloudPure;
     pcl::PointCloud<PointType>::Ptr outlierCloud;
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorCloud;  ////
+
     PointType nanPoint; // fill in fullCloud at each iteration
 
     cv::Mat rangeMat; // range matrix for range image
@@ -112,6 +114,8 @@ public:
         segmentedCloudPure.reset(new pcl::PointCloud<PointType>());
         outlierCloud.reset(new pcl::PointCloud<PointType>());
 
+        colorCloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());  ////
+
         fullCloud->points.resize(N_SCAN*Horizon_SCAN);
         fullInfoCloud->points.resize(N_SCAN*Horizon_SCAN);
 
@@ -142,6 +146,8 @@ public:
         segmentedCloudPure->clear();
         outlierCloud->clear();
 
+        colorCloud->clear();    ////
+
         rangeMat = cv::Mat(N_SCAN, Horizon_SCAN, CV_32F, cv::Scalar::all(FLT_MAX));
         groundMat = cv::Mat(N_SCAN, Horizon_SCAN, CV_8S, cv::Scalar::all(0));
         labelMat = cv::Mat(N_SCAN, Horizon_SCAN, CV_32S, cv::Scalar::all(0));
@@ -156,8 +162,19 @@ public:
     void copyPointCloud(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg){
 
         cloudHeader = laserCloudMsg->header;
+
         // cloudHeader.stamp = ros::Time::now(); // Ouster lidar users may need to uncomment this line
-        pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
+        // pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
+        pcl::fromROSMsg(*laserCloudMsg, *colorCloud);
+        PointType pt;   ////
+        for(int i=0; i<colorCloud->points.size(); i++){    ////
+            pt.x = colorCloud->points[i].x; ////
+            pt.y = colorCloud->points[i].y; ////
+            pt.z = colorCloud->points[i].z; ////
+            pt.rgb = colorCloud->points[i].rgb; ////
+            // pt.intensity = 1;   ////
+            laserCloudIn->push_back(pt);    ////
+        }
         // Remove Nan points
         std::vector<int> indices;
         pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
@@ -166,18 +183,32 @@ public:
     void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg){
 
         // 1. Convert ros message to pcl point cloud
+        // std::cout << 1 << std::endl;
+
         copyPointCloud(laserCloudMsg);
         // 2. Start and end angle of a scan
+        // std::cout << 2 << std::endl;
+
         findStartEndAngle();
         // 3. Range image projection
+        // std::cout << 3 << std::endl;
+
         projectPointCloud();
         // 4. Mark ground points
+        // std::cout << 4 << std::endl;
+
         groundRemoval();
         // 5. Point cloud segmentation
+        // std::cout << 5 << std::endl;
+
         cloudSegmentation();
         // 6. Publish all clouds
+        // std::cout << 6 << std::endl;
+
         publishCloud();
         // 7. Reset parameters for next iteration
+        // std::cout << 7 << std::endl;
+
         resetParameters();
     }
 
@@ -228,11 +259,14 @@ public:
             rangeMat.at<float>(rowIdn, columnIdn) = range;
 
             thisPoint.intensity = (float)rowIdn + (float)columnIdn / 10000.0;
+            thisPoint.rgb = laserCloudIn->points[i].rgb;    ////
 
             index = columnIdn  + rowIdn * Horizon_SCAN;
             fullCloud->points[index] = thisPoint;
             fullInfoCloud->points[index] = thisPoint;
             fullInfoCloud->points[index].intensity = range; // the corresponding range of a point is saved as "intensity"
+
+            // fullInfoCloud->points[index].rgb = laserCloudIn->points[index].rgb; ////
         }
     }
 
@@ -341,6 +375,7 @@ public:
                     if (labelMat.at<int>(i,j) > 0 && labelMat.at<int>(i,j) != 999999){
                         segmentedCloudPure->push_back(fullCloud->points[j + i*Horizon_SCAN]);
                         segmentedCloudPure->points.back().intensity = labelMat.at<int>(i,j);
+                        segmentedCloudPure->points.back().rgb = fullCloud->points[j + i*Horizon_SCAN].rgb;    ////
                     }
                 }
             }

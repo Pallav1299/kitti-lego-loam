@@ -1,0 +1,51 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/pallavbhalla/ndt_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/amathutils_lib/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/autoware_health_checker/include/**",
+                "/home/pallavbhalla/ndt_ws/src/ekf_localizer/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/emergency_handler/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/gnss/include/**",
+                "/home/pallavbhalla/ndt_ws/src/imu_gps_tf/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_core/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/lanelet2_extension/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_io/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_maps/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_projection/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_routing/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_traffic_rules/include/**",
+                "/home/pallavbhalla/ndt_ws/src/Lanelet2/lanelet2_validation/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/libvectormap/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/libwaypoint_follower/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/map_file/include/**",
+                "/home/pallavbhalla/ndt_ws/src/ndt_cpu/include/**",
+                "/home/pallavbhalla/ndt_ws/src/ndt_gpu/include/**",
+                "/home/pallavbhalla/ndt_ws/src/ndt_tku/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/object_map/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/op_planner/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/op_ros_helpers/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/op_simu/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/op_utility/include/**",
+                "/home/pallavbhalla/ndt_ws/src/pcl_omp_registration/include/**",
+                "/home/pallavbhalla/ndt_ws/src/pcl_wk/include/**",
+                "/home/pallavbhalla/ndt_ws/src/points_downsampler/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/ros_observer/include/**",
+                "/home/pallavbhalla/ndt_ws/src/common/vector_map/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
