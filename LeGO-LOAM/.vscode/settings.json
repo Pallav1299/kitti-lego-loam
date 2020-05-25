@@ -4,6 +4,17 @@
         "/opt/ros/kinetic/lib/python2.7/dist-packages"
     ],
     "files.associations": {
-        "iostream": "cpp"
+        "*.ipp": "cpp",
+        "hash_map": "cpp",
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "hash_set": "cpp",
+        "system_error": "cpp",
+        "sstream": "cpp"
     }
 }

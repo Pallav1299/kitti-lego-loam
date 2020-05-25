@@ -104,7 +104,7 @@ extern const float ang_res_y = 0.427;
 extern const float ang_bottom = 24.9; //24.9;
 extern const int groundScanInd = 50;
 
-extern const bool loopClosureEnableFlag = false;
+extern const bool loopClosureEnableFlag = true;
 extern const double mappingProcessInterval = 0.3;
 
 extern const float scanPeriod = 0.1;
