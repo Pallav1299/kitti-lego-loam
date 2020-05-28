@@ -181,6 +181,8 @@ private:
 
     int frameCount;
 
+    bool newTfAvailable;    ////
+
 public:
 
     FeatureAssociation():
@@ -299,6 +301,8 @@ public:
         matP = cv::Mat(6, 6, CV_32F, cv::Scalar::all(0));
 
         frameCount = skipFrameNum;
+
+        newTfAvailable = false; ////
     }
 
     void updateImuRollPitchYawStartSinCos(){
@@ -489,6 +493,7 @@ public:
             point.z = segmentedCloud->points[i].x;
 
             point.rgb = segmentedCloud->points[i].rgb;  ////
+            point.state = segmentedCloud->points[i].state;  ////
 
             float ori = -atan2(point.x, point.z);
             if (!halfPassed) {
@@ -871,6 +876,7 @@ public:
         po->intensity = pi->intensity;
 
         po->rgb = pi->rgb;  ////
+        po->state = pi->state;  ////
     }
 
     void TransformToEnd(PointType const * const pi, PointType * const po)
@@ -943,6 +949,7 @@ public:
         po->intensity = int(pi->intensity);
 
         po->rgb = pi->rgb;  ////
+        po->state = pi->state;  ////
     }
 
     void PluginIMURotation(float bcx, float bcy, float bcz, float blx, float bly, float blz, 
@@ -1747,6 +1754,7 @@ public:
             point.intensity = outlierCloud->points[i].intensity;
 
             point.rgb = outlierCloud->points[i].rgb;    ////
+            point.state = outlierCloud->points[i].state;    ////
             
             outlierCloud->points[i] = point;
         }

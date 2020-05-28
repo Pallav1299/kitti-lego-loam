@@ -527,6 +527,7 @@ public:
         po->z = -sPitch * x2 + cPitch * z2 + tZ;
         po->intensity = pi->intensity;
         po->rgb = pi->rgb;  ////
+        po->state = pi->state;  ////
     }
 
     void updateTransformPointCloudSinCos(PointTypePose *tIn){
@@ -573,6 +574,7 @@ public:
             pointTo.intensity = pointFrom->intensity;
             
             pointTo.rgb = pointFrom->rgb;   ////
+            pointTo.state = pointFrom->state;   ////
 
             cloudOut->points[i] = pointTo;
         }
@@ -606,6 +608,7 @@ public:
             pointTo.intensity = pointFrom->intensity;
 
             pointTo.rgb = pointFrom->rgb;   ////
+            pointTo.state = pointFrom->state;   ////
 
             cloudOut->points[i] = pointTo;
         }
@@ -711,6 +714,22 @@ public:
             publishGlobalMap();
         }
 
+        //remove all black points
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices());    ////
+        pcl::ExtractIndices<PointType> extract; ////
+        for (int i = 0; i < (*globalMapKeyFramesDS).size(); i++)    ////
+        {
+            PointType pt;   ////
+            pt = globalMapKeyFramesDS->points[i];   ////
+            if (pt.state == 1){   ////
+                inliers->indices.push_back(i);  ////
+            }
+        }
+        extract.setInputCloud(globalMapKeyFramesDS);    ////
+        extract.setIndices(inliers);    ////
+        extract.setNegative(true);  ////
+        extract.filter(*globalMapKeyFramesDS);   ////
+
         //copy to XYZRGB pointcloud
         pcl::PointXYZRGB p;
         for (int i = 0; i < globalMapKeyFramesDS->points.size(); i++){
@@ -721,21 +740,7 @@ public:
             outColorCloud->push_back(p);
         }
 
-        //remove all black points
-        pcl::PointIndices::Ptr inliers(new pcl::PointIndices());    ////
-        pcl::ExtractIndices<pcl::PointXYZRGB> extract; ////
-        for (int i = 0; i < (*outColorCloud).size(); i++)    ////
-        {
-            pcl::PointXYZRGB pt;   ////
-            pt = outColorCloud->points[i];   ////
-            if ((pt.r==0) && (pt.g==0) && (pt.b==0)){   ////
-                inliers->indices.push_back(i);  ////
-            }
-        }
-        extract.setInputCloud(outColorCloud);    ////
-        extract.setIndices(inliers);    ////
-        extract.setNegative(true);  ////
-        extract.filter(*outColorCloud);   ////
+        
 
         // save final point cloud
         pcl::io::savePCDFileASCII(fileDirectory+"finalCloud.pcd", *outColorCloud);

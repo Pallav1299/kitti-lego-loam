@@ -164,17 +164,18 @@ public:
         cloudHeader = laserCloudMsg->header;
 
         // cloudHeader.stamp = ros::Time::now(); // Ouster lidar users may need to uncomment this line
-        // pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
-        pcl::fromROSMsg(*laserCloudMsg, *colorCloud);
-        PointType pt;   ////
-        for(int i=0; i<colorCloud->points.size(); i++){    ////
-            pt.x = colorCloud->points[i].x; ////
-            pt.y = colorCloud->points[i].y; ////
-            pt.z = colorCloud->points[i].z; ////
-            pt.rgb = colorCloud->points[i].rgb; ////
-            // pt.intensity = 1;   ////
-            laserCloudIn->push_back(pt);    ////
-        }
+        pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
+        // pcl::fromROSMsg(*laserCloudMsg, *colorCloud);
+        // PointType pt;   ////
+        // for(int i=0; i<colorCloud->points.size(); i++){    ////
+        //     pt.x = colorCloud->points[i].x; ////
+        //     pt.y = colorCloud->points[i].y; ////
+        //     pt.z = colorCloud->points[i].z; ////
+        //     pt.rgb = colorCloud->points[i].rgb; ////
+        //     pt.state = colorCloud->points[i].state; ////
+        //     // pt.intensity = 1;   ////
+        //     laserCloudIn->push_back(pt);    ////
+        // }
         // Remove Nan points
         std::vector<int> indices;
         pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
@@ -260,6 +261,7 @@ public:
 
             thisPoint.intensity = (float)rowIdn + (float)columnIdn / 10000.0;
             thisPoint.rgb = laserCloudIn->points[i].rgb;    ////
+            thisPoint.state = laserCloudIn->points[i].state;    ////
 
             index = columnIdn  + rowIdn * Horizon_SCAN;
             fullCloud->points[index] = thisPoint;
@@ -376,6 +378,7 @@ public:
                         segmentedCloudPure->push_back(fullCloud->points[j + i*Horizon_SCAN]);
                         segmentedCloudPure->points.back().intensity = labelMat.at<int>(i,j);
                         segmentedCloudPure->points.back().rgb = fullCloud->points[j + i*Horizon_SCAN].rgb;    ////
+                        segmentedCloudPure->points.back().state = fullCloud->points[j + i*Horizon_SCAN].state;    ////
                     }
                 }
             }

@@ -176,20 +176,22 @@ typedef PointXYZIRPYT  PointTypePose;
 /*
     * A point cloud type: XYZIRGB
     */
-struct PointXYZIRGB
+struct PointXYZIRGBS
 {
     PCL_ADD_POINT4D;
     PCL_ADD_INTENSITY;
     PCL_ADD_RGB;
+    int state;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
 
-POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRGB,
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRGBS,
                                    (float, x, x) (float, y, y)
                                    (float, z, z) (float, intensity, intensity)
                                    (float, rgb, rgb)
+                                   (int, state, state)
 )
 
-typedef PointXYZIRGB  PointType;
+typedef PointXYZIRGBS  PointType;
 
 #endif
