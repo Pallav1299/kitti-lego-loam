@@ -45,10 +45,14 @@ private:
     ros::Subscriber subOutlierCloud;
     ros::Subscriber subImu;
 
+    ros::Subscriber subRawCloud;    ////
+
     ros::Publisher pubCornerPointsSharp;
     ros::Publisher pubCornerPointsLessSharp;
     ros::Publisher pubSurfPointsFlat;
     ros::Publisher pubSurfPointsLessFlat;
+
+    ros::Publisher pubCombinedCloud;    ////
 
     pcl::PointCloud<PointType>::Ptr segmentedCloud;
     pcl::PointCloud<PointType>::Ptr outlierCloud;
@@ -61,16 +65,27 @@ private:
     pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScan;
     pcl::PointCloud<PointType>::Ptr surfPointsLessFlatScanDS;
 
-    pcl::VoxelGrid<PointType> downSizeFilter;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rawCloudScan;   ////
+    pcl::PointCloud<PointType>::Ptr rawCloudScanState;   ////
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr transformedRawCloudScan;   ////
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rawCloudStitched;   ////
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr rawCloudStitchedFiltered;   ////
+
+    // pcl::VoxelGrid<PointType> downSizeFilter;    ////
+    pcl::VoxelGrid<pcl::PointXYZRGB> downSizeFilter;   ////
 
     double timeScanCur;
     double timeNewSegmentedCloud;
     double timeNewSegmentedCloudInfo;
     double timeNewOutlierCloud;
 
+    double timeNewRawCloud; ////
+
     bool newSegmentedCloud;
     bool newSegmentedCloudInfo;
     bool newOutlierCloud;
+
+    bool newRawCloudScan;   ////
 
     cloud_msgs::cloud_info segInfo;
     std_msgs::Header cloudHeader;
@@ -193,11 +208,15 @@ public:
         subLaserCloudInfo = nh.subscribe<cloud_msgs::cloud_info>("/segmented_cloud_info", 1, &FeatureAssociation::laserCloudInfoHandler, this);
         subOutlierCloud = nh.subscribe<sensor_msgs::PointCloud2>("/outlier_cloud", 1, &FeatureAssociation::outlierCloudHandler, this);
         subImu = nh.subscribe<sensor_msgs::Imu>(imuTopic, 50, &FeatureAssociation::imuHandler, this);
+        
+        subRawCloud = nh.subscribe<sensor_msgs::PointCloud2>("/points_fused", 1, &FeatureAssociation::rawCloudHandler, this);   ////
 
         pubCornerPointsSharp = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_sharp", 1);
         pubCornerPointsLessSharp = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_less_sharp", 1);
         pubSurfPointsFlat = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_flat", 1);
         pubSurfPointsLessFlat = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_less_flat", 1);
+
+        pubCombinedCloud = nh.advertise<sensor_msgs::PointCloud2>("/combined_cloud", 5);    ////
 
         pubLaserCloudCornerLast = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_corner_last", 2);
         pubLaserCloudSurfLast = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf_last", 2);
@@ -211,7 +230,7 @@ public:
     {
         cloudSmoothness.resize(N_SCAN*Horizon_SCAN);
 
-        downSizeFilter.setLeafSize(0.2, 0.2, 0.2);
+        downSizeFilter.setLeafSize(0.1, 0.1, 0.1);
 
         segmentedCloud.reset(new pcl::PointCloud<PointType>());
         outlierCloud.reset(new pcl::PointCloud<PointType>());
@@ -224,14 +243,25 @@ public:
         surfPointsLessFlatScan.reset(new pcl::PointCloud<PointType>());
         surfPointsLessFlatScanDS.reset(new pcl::PointCloud<PointType>());
 
+        rawCloudScan.reset(new pcl::PointCloud<pcl::PointXYZRGB>());   ////
+        rawCloudScanState.reset(new pcl::PointCloud<PointType>());   ////
+        transformedRawCloudScan.reset(new pcl::PointCloud<pcl::PointXYZRGB>());    ////
+        rawCloudStitched.reset(new pcl::PointCloud<pcl::PointXYZRGB>());   ////
+        rawCloudStitchedFiltered.reset(new pcl::PointCloud<pcl::PointXYZRGB>());   ////
+
+
         timeScanCur = 0;
         timeNewSegmentedCloud = 0;
         timeNewSegmentedCloudInfo = 0;
         timeNewOutlierCloud = 0;
 
+        timeNewRawCloud = 0;    ////
+
         newSegmentedCloud = false;
         newSegmentedCloudInfo = false;
         newOutlierCloud = false;
+
+        newRawCloudScan = false;    ////
 
         systemInitCount = 0;
         systemInited = false;
@@ -477,6 +507,38 @@ public:
         timeNewSegmentedCloudInfo = msgIn->header.stamp.toSec();
         segInfo = *msgIn;
         newSegmentedCloudInfo = true;
+    }
+
+    void rawCloudHandler(const sensor_msgs::PointCloud2ConstPtr& rawCloudMsg)   ////
+    {   
+        timeNewRawCloud = rawCloudMsg->header.stamp.toSec();    ////
+        pcl::fromROSMsg(*rawCloudMsg, *rawCloudScanState);   ////
+
+        //remove all black points
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices());    ////
+        pcl::ExtractIndices<PointType> extract; ////
+        for (int i = 0; i < (*rawCloudScanState).size(); i++)    ////
+        {
+            PointType pt;   ////
+            pt = rawCloudScanState->points[i];   ////
+            if (pt.state == 1){   ////
+                inliers->indices.push_back(i);  ////
+            }
+        }
+        extract.setInputCloud(rawCloudScanState);    ////
+        extract.setIndices(inliers);    ////
+        extract.setNegative(true);  ////
+        extract.filter(*rawCloudScanState);   ////
+
+        pcl::PointXYZRGB p;    ////
+        for (int i=0; i<rawCloudScanState->points.size(); i++){   ////
+            p.x = rawCloudScanState->points[i].y; ////
+            p.y = rawCloudScanState->points[i].z; ////
+            p.z = rawCloudScanState->points[i].x; ////
+            p.rgb = rawCloudScanState->points[i].rgb;   ////
+            rawCloudScan->push_back(p); ////
+        }   ////
+        newRawCloudScan = true; ////
     }
 
     void adjustDistortion()
@@ -770,10 +832,11 @@ public:
             }
 
             surfPointsLessFlatScanDS->clear();
-            downSizeFilter.setInputCloud(surfPointsLessFlatScan);
-            downSizeFilter.filter(*surfPointsLessFlatScanDS);
+            // downSizeFilter.setInputCloud(surfPointsLessFlatScan);    ////
+            // downSizeFilter.filter(*surfPointsLessFlatScanDS);    ////
 
-            *surfPointsLessFlat += *surfPointsLessFlatScanDS;
+            *surfPointsLessFlat += *surfPointsLessFlatScanDS;   ////
+            *surfPointsLessFlat += *surfPointsLessFlatScan; ////
         }
     }
 
@@ -808,6 +871,13 @@ public:
 	        laserCloudOutMsg.header.frame_id = "/camera";
 	        pubSurfPointsLessFlat.publish(laserCloudOutMsg);
 	    }
+
+        // if (pubCombinedCloud.getNumSubscribers() != 0){
+        //     pcl::toROSMsg(*rawCloudStitched, laserCloudOutMsg);
+	    //     laserCloudOutMsg.header.stamp = cloudHeader.stamp;
+	    //     laserCloudOutMsg.header.frame_id = "/camera_init";
+	    //     pubCombinedCloud.publish(laserCloudOutMsg);
+        // }
     }
 
 
@@ -1741,6 +1811,27 @@ public:
         laserOdometryTrans.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
         laserOdometryTrans.setOrigin(tf::Vector3(transformSum[3], transformSum[4], transformSum[5]));
         tfBroadcaster.sendTransform(laserOdometryTrans);
+
+        // stitchCloud();   ////
+        newTfAvailable = true;  ////
+    }
+
+    void stitchCloud(){ ////
+        // if (newRawCloudScan && newTfAvailable && std::abs(timeNewRawCloud - timeScanCur) < 0.05){   ////
+        if (newRawCloudScan && newTfAvailable){   ////
+            newRawCloudScan = false;    ////
+            newTfAvailable = false; ////
+        }else{  ////
+            return; ////
+        }   ////
+
+        pcl_ros::transformPointCloud(*rawCloudScan, *transformedRawCloudScan, laserOdometryTrans);  ////
+
+        rawCloudStitched->points.resize(rawCloudStitched->points.size() + transformedRawCloudScan->points.size());
+        *rawCloudStitched += *transformedRawCloudScan;  ////
+
+        rawCloudScan->clear();  ////
+        transformedRawCloudScan->clear();   ////
     }
 
     void adjustOutlierCloud(){
@@ -1818,6 +1909,22 @@ public:
         }
     }
 
+    void saveGlobalMapThread(){ ////
+        ros::Rate rate(0.1);    ////
+        while (ros::ok()){  ////
+            rate.sleep();   ////
+        }
+        
+        rawCloudStitchedFiltered->clear();
+        downSizeFilter.setInputCloud(rawCloudStitched);    ////
+        downSizeFilter.filter(*rawCloudStitchedFiltered);    ////
+
+        std::cout << "Saving PCD" << std::endl; ////
+        pcl::io::savePCDFileASCII("/home/pallavbhalla/Documents/LeGO-LOAM/coloured_pcd/rawCombined.pcd", *rawCloudStitchedFiltered);    ////
+        std::cout << "Saved PCD" << std::endl;  ////
+    }
+    
+
     void runFeatureAssociation()
     {
 
@@ -1860,7 +1967,10 @@ public:
 
         publishOdometry();
 
+        stitchCloud();  ////
+
         publishCloudsLast(); // cloud to mapOptimization
+
     }
 };
 
@@ -1875,6 +1985,8 @@ int main(int argc, char** argv)
 
     FeatureAssociation FA;
 
+    std::thread saveMapThread(&FeatureAssociation::saveGlobalMapThread, &FA);
+
     ros::Rate rate(200);
     while (ros::ok())
     {
@@ -1884,6 +1996,8 @@ int main(int argc, char** argv)
 
         rate.sleep();
     }
+
+    saveMapThread.join();
     
     ros::spin();
     return 0;
