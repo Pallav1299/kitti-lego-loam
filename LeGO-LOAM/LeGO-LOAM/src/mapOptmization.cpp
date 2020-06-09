@@ -150,6 +150,9 @@ private:
     pcl::PointCloud<PointType>::Ptr globalMapKeyFrames;
     pcl::PointCloud<PointType>::Ptr globalMapKeyFramesDS;
 
+    pcl::PointCloud<PointType>::Ptr globalMapCloudOptimized;    ////
+    pcl::PointCloud<PointType> submap;  ////
+
     std::vector<int> pointSearchInd;
     std::vector<float> pointSearchSqDis;
 
@@ -161,7 +164,8 @@ private:
     pcl::VoxelGrid<PointType> downSizeFilterGlobalMapKeyPoses; // for global map visualization
     pcl::VoxelGrid<PointType> downSizeFilterGlobalMapKeyFrames; // for global map visualization
 
-    pcl::VoxelGrid<pcl::PointXYZRGB> downRawColorCloudKeyFrames;   ////
+    pcl::VoxelGrid<pcl::PointXYZRGB> downRawColorSubmapKeyFrames;   ////
+
 
     double timeLaserCloudCornerLast;
     double timeLaserCloudSurfLast;
@@ -224,6 +228,16 @@ private:
     float cRoll, sRoll, cPitch, sPitch, cYaw, sYaw, tX, tY, tZ;
     float ctRoll, stRoll, ctPitch, stPitch, ctYaw, stYaw, tInX, tInY, tInZ;
 
+    bool saveLastSubmap; ////
+    int submap_num; ////
+    float submap_size;  ////   
+
+    std::string s1, s2, s3, pcd_filename;   ////
+
+    float current_x, current_y, current_z;  ////
+    float prev_x, prev_y, prev_z;   ////
+
+
 public:
 
     
@@ -262,7 +276,7 @@ public:
         downSizeFilterGlobalMapKeyPoses.setLeafSize(1.0, 1.0, 1.0); // for global map visualization
         downSizeFilterGlobalMapKeyFrames.setLeafSize(0.4, 0.4, 0.4); // for global map visualization
 
-        downRawColorCloudKeyFrames.setLeafSize(0.1, 0.1, 0.1);  ////
+        downRawColorSubmapKeyFrames.setLeafSize(0.1, 0.1, 0.1);  ////
 
         odomAftMapped.header.frame_id = "/camera_init";
         odomAftMapped.child_frame_id = "/aft_mapped";
@@ -321,6 +335,7 @@ public:
         globalMapKeyFramesDS.reset(new pcl::PointCloud<PointType>());
 
         rawCloudScanState.reset(new pcl::PointCloud<PointType>());  ////
+        globalMapCloudOptimized.reset(new pcl::PointCloud<PointType>());    ////
 
         timeLaserCloudCornerLast = 0;
         timeLaserCloudSurfLast = 0;
@@ -381,6 +396,19 @@ public:
         aLoopIsClosed = false;
 
         latestFrameID = 0;
+
+        saveLastSubmap = false; ////
+
+        submap_num = 0; ////
+        submap_size = 0;    ////    
+
+        prev_x = 0.0;   ////
+        prev_y = 0.0;   ////
+        prev_z = 0.0;   ////
+
+        current_x = 0.0;    ////
+        current_y = 0.0;    ////
+        current_z = 0.0;    ////
     }
 
     void transformAssociateToMap()
@@ -754,6 +782,74 @@ public:
         }
     }
 
+    void saveSubmap(){
+        double shift = sqrt(pow(current_x - prev_x, 2.0) + pow(current_y - prev_y, 2.0) + pow(current_z - prev_z, 2.0));
+        // cout << shift << endl;
+        submap_size = shift;
+        if ((submap_size >= max_submap_size) || saveLastSubmap == true){    
+            submap = *globalMapCloudOptimized;    
+            submap_num ++;  
+            submap.height = 1;  
+            submap.width = submap.size();    
+
+            globalMapCloudOptimized->clear();  
+
+            /*
+            Uncomment following two lines to visualize created submaps. This causes RVIZ to crash
+            in case of large pointclouds.
+            */
+
+            // savedSubmap = submap;   
+            // publishGlobalMap(); 
+
+            s1 = submapDirectory;
+            s2 = std::to_string(submap_num);
+            s3 = ".pcd";
+            pcd_filename = s1 + s2 + s3;
+
+            if (submap.size() != 0)
+            {   
+                // store points in XYZRGB pointcloud
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+                pcl::PointXYZRGB pt;
+                for (int id=0; id < submap.points.size(); id ++){
+                    pt.x = submap.points[id].x;
+                    pt.y = submap.points[id].y;
+                    pt.z = submap.points[id].z;
+                    pt.rgb = submap.points[id].rgb;
+                    outColorCloud->points.push_back(pt);
+                }
+
+                // // Save raw colored submap
+                // if (pcl::io::savePCDFileBinary(pcd_filename, *outColorCloud) == -1)
+                // {
+                //     std::cout << "Failed saving " << pcd_filename << "." << std::endl;
+                // }
+                // std::cout << "Saved " << pcd_filename << " (" << outColorCloud->points.size() << " points)" << std::endl;
+
+                // downsizing (UNCOMMENT IF REQUIRED)
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorCloudDS(new pcl::PointCloud<pcl::PointXYZRGB>());
+
+                downRawColorSubmapKeyFrames.setInputCloud(outColorCloud);
+                downRawColorSubmapKeyFrames.filter(*outColorCloudDS);
+                
+                // Save downsampled colored submap
+                if (pcl::io::savePCDFileBinary(pcd_filename, *outColorCloudDS) == -1)
+                {
+                    std::cout << "Failed saving " << pcd_filename << "." << std::endl;
+                }
+                std::cout << "Saved " << pcd_filename << " (" << outColorCloudDS->points.size() << " points)" << std::endl;
+
+                outColorCloud->clear();
+                submap.clear();
+                submap_size = 0.0;
+            }
+            prev_x = current_x;
+            prev_y = current_y;
+            prev_z = current_z;
+        }
+    }
+
     void visualizeGlobalMapThread(){
         ros::Rate rate(0.2);
         while (ros::ok()){
@@ -764,38 +860,24 @@ public:
 // ######################### CHANGED ###############################
 
         //stitch raw cloud frames
-        pcl::PointCloud<PointType>::Ptr globalMapCloudOptimized(new pcl::PointCloud<PointType>());
+        // pcl::PointCloud<PointType>::Ptr globalMapCloudOptimized(new pcl::PointCloud<PointType>());
         for(int i = 0; i < rawCloudKeyFrames.size(); i++) {
             for(int j = 0; j <= cloudKeyPoses6D->points.size(); j++){
                 if (rawCloudKeyFrames[i].second == cloudKeyPoses6D->points[j].time){
                     *globalMapCloudOptimized  += *transformPointCloud(rawCloudKeyFrames[i].first, &cloudKeyPoses6D->points[j]);
+                    current_x = cloudKeyPoses6D->points[j].x;
+                    current_y = cloudKeyPoses6D->points[j].y;
+                    current_z = cloudKeyPoses6D->points[j].z;
+                    saveSubmap();
                     break;
                 }
             }     
         }
 
-        // store points in XYZRGB pointcloud
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorCloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-        pcl::PointXYZRGB pt;
-        for (int id=0; id < globalMapCloudOptimized->points.size(); id ++){
-            pt.x = globalMapCloudOptimized->points[id].x;
-            pt.y = globalMapCloudOptimized->points[id].y;
-            pt.z = globalMapCloudOptimized->points[id].z;
-            pt.rgb = globalMapCloudOptimized->points[id].rgb;
-            outColorCloud->points.push_back(pt);
+        if (globalMapCloudOptimized->points.size() != 0){
+            saveLastSubmap = true;
+            saveSubmap();
         }
-
-        // downsizing
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr outColorCloudDS(new pcl::PointCloud<pcl::PointXYZRGB>());
-
-        downRawColorCloudKeyFrames.setInputCloud(outColorCloud);
-        downRawColorCloudKeyFrames.filter(*outColorCloudDS);
-
-        // save raw_stitched point color cloud
-        pcl::io::savePCDFileBinary(fileDirectory+"coloredRawCloud.pcd", *outColorCloud);
-
-        // save downsampled raw_stitched color cloud
-        pcl::io::savePCDFileBinary(fileDirectory+"coloredDownSampledCloud.pcd", *outColorCloudDS);
 
 // #################################################################
 
@@ -851,8 +933,6 @@ public:
         downSizeFilterGlobalMapKeyPoses.filter(*globalMapKeyPosesDS);    ////
 
         // pcl::copyPointCloud(*globalMapKeyPoses,  *globalMapKeyPosesDS); ////
-
-        // std::cout << cloudKeyPoses3D->points.size() << " : "<< globalMapKeyPoses->points.size() << " : "<< globalMapKeyPosesDS->points.size() << std::endl;
 
 	    // extract visualized and downsampled key frames
         for (int i = 0; i < globalMapKeyPosesDS->points.size(); ++i){

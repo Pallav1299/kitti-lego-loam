@@ -63,6 +63,9 @@ extern const string imuTopic = "/kitti/oxts/imu";
 // extern const string fileDirectory = "/tmp/";
 extern const string fileDirectory = "/home/pallavbhalla/Documents/LeGO-LOAM/coloured_pcd/";
 
+extern const string submapDirectory = "/home/pallavbhalla/Documents/LeGO-LOAM/submaps/submap_"; ////
+extern float const max_submap_size = 100;  ////
+
 // VLP-16
 //extern const int N_SCAN = 16;
 //extern const int Horizon_SCAN = 1800;
