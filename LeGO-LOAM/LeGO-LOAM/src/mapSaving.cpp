@@ -65,7 +65,7 @@ public :
         nh("~")
         {   
             subRawCloud = nh.subscribe<sensor_msgs::PointCloud2>("/points_fused", 5, &MapSaving::rawCloudHandler, this);   
-            subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("/laser_odom_to_init", 5, &MapSaving::laserOdometryHandler, this);  
+            subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("/integrated_to_init", 5, &MapSaving::laserOdometryHandler, this);  
             // sbmap.reset(new pcl::PointCloud<PointType>());
             pubSubmap = nh.advertise<sensor_msgs::PointCloud2>("/submap", 5);    
 
@@ -200,8 +200,8 @@ public :
 
     void saveSubmap()
     {
-        double shift = sqrt(pow(current_x - prev_x, 2.0) + pow(current_z - prev_z, 2.0)); 
-        std::cout << shift << std::endl; 
+        double shift = sqrt(pow(current_x - prev_x, 2.0) + pow(current_y - prev_y, 2.0) + pow(current_z - prev_z, 2.0)); 
+        // std::cout << shift << std::endl; 
 
         submap_size = shift;   
         if (submap_size >= max_submap_size){    

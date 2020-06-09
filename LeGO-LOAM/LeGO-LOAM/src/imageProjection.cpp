@@ -77,6 +77,7 @@ private:
 
     uint16_t *queueIndX; // array for breadth-first search process of segmentation
     uint16_t *queueIndY;
+    int in; ////
 
 public:
     ImageProjection():
@@ -137,6 +138,8 @@ public:
 
         queueIndX = new uint16_t[N_SCAN*Horizon_SCAN];
         queueIndY = new uint16_t[N_SCAN*Horizon_SCAN];
+
+        in = 0; ////
     }
 
     void resetParameters(){
@@ -165,6 +168,7 @@ public:
 
         // cloudHeader.stamp = ros::Time::now(); // Ouster lidar users may need to uncomment this line
         pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
+
         // pcl::fromROSMsg(*laserCloudMsg, *colorCloud);
         // PointType pt;   ////
         // for(int i=0; i<colorCloud->points.size(); i++){    ////
@@ -260,8 +264,8 @@ public:
             rangeMat.at<float>(rowIdn, columnIdn) = range;
 
             thisPoint.intensity = (float)rowIdn + (float)columnIdn / 10000.0;
-            thisPoint.rgb = laserCloudIn->points[i].rgb;    ////
-            thisPoint.state = laserCloudIn->points[i].state;    ////
+            // thisPoint.rgb = laserCloudIn->points[i].rgb;    ////
+            // thisPoint.state = laserCloudIn->points[i].state;    ////
 
             index = columnIdn  + rowIdn * Horizon_SCAN;
             fullCloud->points[index] = thisPoint;
@@ -351,7 +355,7 @@ public:
                     }
                     // majority of ground points are skipped
                     if (groundMat.at<int8_t>(i,j) == 1){
-                        if (j%5!=0 && j>5 && j<Horizon_SCAN-5)
+                        if (j%5!=0 && j>5 && j<Horizon_SCAN-5){}    ////
                             continue;
                     }
                     // mark ground points so they will not be considered as edge features later
@@ -377,8 +381,8 @@ public:
                     if (labelMat.at<int>(i,j) > 0 && labelMat.at<int>(i,j) != 999999){
                         segmentedCloudPure->push_back(fullCloud->points[j + i*Horizon_SCAN]);
                         segmentedCloudPure->points.back().intensity = labelMat.at<int>(i,j);
-                        segmentedCloudPure->points.back().rgb = fullCloud->points[j + i*Horizon_SCAN].rgb;    ////
-                        segmentedCloudPure->points.back().state = fullCloud->points[j + i*Horizon_SCAN].state;    ////
+                        // segmentedCloudPure->points.back().rgb = fullCloud->points[j + i*Horizon_SCAN].rgb;    ////
+                        // segmentedCloudPure->points.back().state = fullCloud->points[j + i*Horizon_SCAN].state;    ////
                     }
                 }
             }
